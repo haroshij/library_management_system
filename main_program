@@ -1,78 +1,180 @@
 import argparse
 import json
 from class_description import Book
+from random import randint
 
 
+# Константы с возможным написанием каждой команды.
 ADD_BOOK_COMMAND = ('ab', 'addbook', 'add_book')
 DEL_BOOK_COMMAND = ('db', 'delbook', 'del_book', 'deletebook', 'delete_book')
 FIND_BOOK_COMMAND = ('fb', 'findbook', 'find_book')
 VIEW_BOOKS_COMMAND = ('vb', 'viewbooks', 'view_books', 'viewbook', 'view_book')
 CHANGE_STATUS_COMMAND = ('cs', 'changestatus', 'change_status')
+
+# Константа с возможными статусами книг.
 BOOK_STATUS = ('выдана', 'в наличии')
 
 
-def return_dict_from_json(file_name):
+def return_dict_from_json(file_name: str) -> dict[str: str]:
+    """Вспомогательная функция для считывания json-файла
+    в словарь, в который будут вноситься изменения."""
+
     with open(file_name, encoding='utf-8') as books:
         try:
             return json.load(books)
+        # Данное исключение необходимо в случае, если json-файл был пуст.
         except json.JSONDecodeError:
             return dict()
 
 
-def write_dict_to_json(temp_dict, file_name):
+def write_dict_to_json(temp_dict: dict[str: str], file_name: str) -> None:
+    """Вспомогательная функция для записи словаря в json-файл."""
+
     with open(file_name, 'w', encoding='utf-8') as books:
         json.dump(temp_dict, books, ensure_ascii=False, indent=4)
 
 
-def add_book(title, author, year):
-    new_book = Book(title, author, year)
+def is_id_correct(id: int, file_name: str) -> bool:
+    """Функция, определяющая, есть ли id в списке книг."""
+
+    if str(id) in return_dict_from_json(file_name):
+        return True
+    else:
+        raise KeyError(f'Для ID {id} нет книги.')
+    # Для случая, когда ID не типа int, возникает ошибка в терминале,
+    # поэтому здесь она не рейзится.
+
+
+def add_book(title: str, author: str, year: int) -> None:
+    """Функция добавления в json-файл новой книги"""
+
+    new_book = Book(title, author, year)  # Создаём экзмепляр книги.
+
+    # Записываем файл в словарь.
     temp_dict = return_dict_from_json('books.json')
+
+    # Формируем значение для ID.
     book_description = f'{title}, {author}, {year}. Статус: {new_book.status}'
-    temp_dict[new_book.id] = book_description
+
+    # Если ID уже существует, формируем его случайным образом.
+    while str(new_book.id) in temp_dict:
+        new_book.id = randint(100, 999999)
+
+    # Записываем пару "ID": "Описание книги" в словарь.
+    temp_dict[str(new_book.id)] = book_description
+
+    # Записываем словарь в json-файл.
     write_dict_to_json(temp_dict, 'books.json')
 
 
-def del_book(id):
-    temp_dict = return_dict_from_json('books.json')
-    del temp_dict[str(id)]
-    write_dict_to_json(temp_dict, 'books.json')
+def del_book(id: int) -> None:
+    """Функция удаления в json-файле новой книги по её ID"""
 
+    # Если ID книги существует, то...
+    if is_id_correct(id, 'books.json'):
 
-def find_book(key_word):
-    temp_dict = return_dict_from_json('books.json')
-    finding = ''
-    for book in temp_dict.values():
-        if key_word in book:
-            finding += book.replace("_", " ") + '\n'
-    if finding:
-        print(finding)
-    else:
-        print(f'Ничего не найдено по вашему запросу "{key_word}"')
+        # Записываем файл в словарь.
+        temp_dict = return_dict_from_json('books.json')
 
+        # Удаляем пару с ключом равным нашему ID.
+        del temp_dict[str(id)]
 
-def view_books():
-    temp_dict = return_dict_from_json('books.json')
-    print('Список всех книг:')
-    for id, book in temp_dict.items():
-        print(f'ID: {id}. {book.replace("_", " ")}')
-
-
-def change_status(id, status):
-    temp_dict = return_dict_from_json('books.json')
-    book_description = temp_dict[str(id)]
-    if status not in BOOK_STATUS:
-        print(f'Указан некорректный статус: "{status}"')
-    elif status in book_description:
-        print(f'Статус данной книги уже "{status}"')
-    else:
-        cur_status = 'в наличии' if status == 'выдана' else 'выдана'
-        book_description = book_description.replace(cur_status, status)
-        temp_dict[str(id)] = book_description
+        # Записываем словарь в json-файл.
         write_dict_to_json(temp_dict, 'books.json')
 
 
+def find_book(key_word: str) -> None:
+    """Функция для поиска книги по ключевому слову"""
+
+    # Записываем файл в словарь.
+    temp_dict = return_dict_from_json('books.json')
+
+    # Переменная для списка найденных книг.
+    finding = ''
+
+    # Проходим по каждому значению словаря.
+    for book in temp_dict.values():
+
+        # Если искомое слово есть в описании книги, то...
+        if key_word.lower() in book.lower():
+            # записываем его в список найденных книг.
+            finding += book.replace("_", " ") + '\n'
+
+    # Проверяем, нашлись ли книги с указанным значением.
+    if finding:
+
+        # Если нашлась хотя бы одна, выводим список книг.
+        print(finding)
+    else:
+
+        # Если книги с искомым словом не найдены, выдаём сообщение ниже.
+        print(f'Ничего не найдено по вашему запросу "{key_word}".')
+
+
+def view_books() -> None:
+    """Функция для вывода на экран списка всех книг из файла."""
+
+    # Записываем файл в словарь.
+    temp_dict = return_dict_from_json('books.json')
+
+    # Проверяем, есть ли книги вообще.
+    if temp_dict:
+
+        # Выводим список книг построчно.
+        print('Список всех книг:')
+        for id, book in temp_dict.items():
+
+            # Нижние подчёркивания меняем при выводе на пробелы.
+            print(f'ID: {id}. {book.replace("_", " ")}')
+
+    # Если книг нет, выводим сообщение ниже.
+    else:
+        print('Нет ни одной книги в списке.')
+
+
+def change_status(id: int, status: str) -> None:
+    """Функция для изменения статуса книги."""
+
+    # Если ID книги существует, то...
+    if is_id_correct(id, 'books.json'):
+
+        # Записываем файл в словарь.
+        temp_dict = return_dict_from_json('books.json')
+
+        # Записываем текущее описание книги.
+        book_description = temp_dict[str(id)]
+
+        # Если статус некорректен, выводим сообщение ниже.
+        if status not in BOOK_STATUS:
+            print(f'Указан некорректный статус: "{status}".')
+
+        # Если статус у книги такой же, как и статус на замену,
+        # выводим сообщение ниже.
+        elif status in book_description:
+            print(f'Статус данной книги уже "{status}".')
+
+        # Меняем статус книги
+        else:
+
+            # Определяем и записываем статус, который необходимо заменить.
+            cur_status = 'в наличии' if status == 'выдана' else 'выдана'
+
+            # Меняем в описании книги текущий статус книги на новый.
+            book_description = book_description.replace(cur_status, status)
+
+            # Записываем новое описание книги.
+            temp_dict[str(id)] = book_description
+
+            # Записываем словарь в json-файл.
+            write_dict_to_json(temp_dict, 'books.json')
+
+
 if __name__ == '__main__':
+
+    # Заводим экземпляр-парсер.
     parser = argparse.ArgumentParser()
+
+    # Определяем и описываем возможные аргументы.
     parser.add_argument('-c', '--command', help='start this command', type=str,
                         required=True)
     parser.add_argument('-a', '--author', help='Name of author', type=str)
@@ -84,8 +186,13 @@ if __name__ == '__main__':
                         type=str)
     parser.add_argument('-s', '--status', help='Status of a book', type=str)
 
+    # Записываем аргументы в переменную.
     args = parser.parse_args()
+
+    # Считываем необходимую для выполнения команду.
     command = args.command.lower()
+
+    # Определяем, какую команду следует выполнить.
     if command in ADD_BOOK_COMMAND:
         add_book(args.title, args.author, args.year)
     elif command in DEL_BOOK_COMMAND:
@@ -96,3 +203,7 @@ if __name__ == '__main__':
         view_books()
     elif command in CHANGE_STATUS_COMMAND:
         change_status(args.id, args.status)
+
+    # Если команда некорректна, выводим сообщение ниже:
+    else:
+        print('Неизвестная комманда')
