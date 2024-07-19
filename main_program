@@ -2,11 +2,34 @@ from class_description import Book
 import argparse
 import json
 
+ADD_BOOK_COMMAND = ('ab', 'addbook', 'add_book')
+DEL_BOOK_COMMAND = ('db', 'delbook', 'del_book', 'deletebook', 'delete_book')
+
+
+def return_dict_from_json(file_name):
+    with open(file_name) as books:
+        try:
+            return json.load(books)
+        except json.JSONDecodeError:
+            return dict()
+
+
+def write_dict_to_json(temp_dict, file_name):
+    with open(file_name, 'w') as books:
+        json.dump(temp_dict, books)
+
 
 def add_book(title, author, year):
-    Book(title, author, year)
-    with open('books.json', 'w') as books:
-        json.dump(Book.id_dict, books)
+    new_book = Book(title, author, year)
+    temp_dict = return_dict_from_json('books.json')
+    temp_dict[new_book.id] = f'{title}, {author}, {year}'
+    write_dict_to_json(temp_dict, 'books.json')
+
+
+def del_book(id):
+    temp_dict = return_dict_from_json('books.json')
+    del temp_dict[str(id)]
+    write_dict_to_json(temp_dict, 'books.json')
 
 
 if __name__ == '__main__':
@@ -20,5 +43,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     command = args.command
-    if command == 'ab':
+    if command in ADD_BOOK_COMMAND:
         add_book(args.title, args.author, args.year)
+    elif command in DEL_BOOK_COMMAND:
+        del_book(args.id)

@@ -36,6 +36,7 @@ class Book:
                 return id
 
 
+# Для тестирования корректности создания экземпляров их методов.
 if __name__ == '__main__':
     mumu = Book('Mu-mu', 'Turgenev', 1970)
     mumu2 = Book('Mu-mu', 'Turgenev', 1970)
