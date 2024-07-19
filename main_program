@@ -1,1 +1,24 @@
-pass
+from class_description import Book
+import argparse
+import json
+
+
+def add_book(title, author, year):
+    Book(title, author, year)
+    with open('books.json', 'w') as books:
+        json.dump(Book.id_dict, books)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--command', help='start this command', type=str,
+                        required=True)
+    parser.add_argument('-a', '--author', help='Name of author', type=str)
+    parser.add_argument('-t', '--title', help='Title of a book', type=str)
+    parser.add_argument('-y', '--year', help='Year of publication', type=int)
+    parser.add_argument('-i', '--id', help='Book ID', type=int)
+
+    args = parser.parse_args()
+    command = args.command
+    if command == 'ab':
+        add_book(args.title, args.author, args.year)
