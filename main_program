@@ -1,13 +1,18 @@
-from class_description import Book
 import argparse
 import json
+from class_description import Book
+
 
 ADD_BOOK_COMMAND = ('ab', 'addbook', 'add_book')
 DEL_BOOK_COMMAND = ('db', 'delbook', 'del_book', 'deletebook', 'delete_book')
+FIND_BOOK_COMMAND = ('fb', 'findbook', 'find_book')
+VIEW_BOOKS_COMMAND = ('vb', 'viewbooks', 'view_books', 'viewbook', 'view_book')
+CHANGE_STATUS_COMMAND = ('cs', 'changestatus', 'change_status')
+BOOK_STATUS = ('выдана', 'в наличии')
 
 
 def return_dict_from_json(file_name):
-    with open(file_name) as books:
+    with open(file_name, encoding='utf-8') as books:
         try:
             return json.load(books)
         except json.JSONDecodeError:
@@ -15,14 +20,15 @@ def return_dict_from_json(file_name):
 
 
 def write_dict_to_json(temp_dict, file_name):
-    with open(file_name, 'w') as books:
-        json.dump(temp_dict, books)
+    with open(file_name, 'w', encoding='utf-8') as books:
+        json.dump(temp_dict, books, ensure_ascii=False, indent=4)
 
 
 def add_book(title, author, year):
     new_book = Book(title, author, year)
     temp_dict = return_dict_from_json('books.json')
-    temp_dict[new_book.id] = f'{title}, {author}, {year}'
+    book_description = f'{title}, {author}, {year}. Статус: {new_book.status}'
+    temp_dict[new_book.id] = book_description
     write_dict_to_json(temp_dict, 'books.json')
 
 
@@ -30,6 +36,39 @@ def del_book(id):
     temp_dict = return_dict_from_json('books.json')
     del temp_dict[str(id)]
     write_dict_to_json(temp_dict, 'books.json')
+
+
+def find_book(key_word):
+    temp_dict = return_dict_from_json('books.json')
+    finding = ''
+    for book in temp_dict.values():
+        if key_word in book:
+            finding += book.replace("_", " ") + '\n'
+    if finding:
+        print(finding)
+    else:
+        print(f'Ничего не найдено по вашему запросу "{key_word}"')
+
+
+def view_books():
+    temp_dict = return_dict_from_json('books.json')
+    print('Список всех книг:')
+    for id, book in temp_dict.items():
+        print(f'ID: {id}. {book.replace("_", " ")}')
+
+
+def change_status(id, status):
+    temp_dict = return_dict_from_json('books.json')
+    book_description = temp_dict[str(id)]
+    if status not in BOOK_STATUS:
+        print(f'Указан некорректный статус: "{status}"')
+    elif status in book_description:
+        print(f'Статус данной книги уже "{status}"')
+    else:
+        cur_status = 'в наличии' if status == 'выдана' else 'выдана'
+        book_description = book_description.replace(cur_status, status)
+        temp_dict[str(id)] = book_description
+        write_dict_to_json(temp_dict, 'books.json')
 
 
 if __name__ == '__main__':
@@ -40,10 +79,20 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--title', help='Title of a book', type=str)
     parser.add_argument('-y', '--year', help='Year of publication', type=int)
     parser.add_argument('-i', '--id', help='Book ID', type=int)
+    parser.add_argument('-kw', '--keyword',
+                        help='The word by which you need to find the book',
+                        type=str)
+    parser.add_argument('-s', '--status', help='Status of a book', type=str)
 
     args = parser.parse_args()
-    command = args.command
+    command = args.command.lower()
     if command in ADD_BOOK_COMMAND:
         add_book(args.title, args.author, args.year)
     elif command in DEL_BOOK_COMMAND:
         del_book(args.id)
+    elif command in FIND_BOOK_COMMAND:
+        find_book(args.keyword)
+    elif command in VIEW_BOOKS_COMMAND:
+        view_books()
+    elif command in CHANGE_STATUS_COMMAND:
+        change_status(args.id, args.status)
