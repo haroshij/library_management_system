@@ -202,7 +202,7 @@ if __name__ == '__main__':
     elif command in VIEW_BOOKS_COMMAND:
         view_books()
     elif command in CHANGE_STATUS_COMMAND:
-        change_status(args.id, args.status)
+        change_status(args.id, args.status.lower())
 
     # Если команда некорректна, выводим сообщение ниже:
     else:
